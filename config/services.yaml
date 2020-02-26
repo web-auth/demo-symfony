@@ -25,3 +25,6 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    Symfony\Bridge\PsrHttpMessage\HttpMessageFactoryInterface:
+        alias: 'sensio_framework_extra.psr7.http_message_factory'

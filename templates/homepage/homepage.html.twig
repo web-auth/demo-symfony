@@ -1,0 +1,338 @@
+{%  extends 'base.html.twig' %}
+
+{% block body %}
+    {% if app.user %}
+        <h1>Hello {{ app.user.displayName }}</h1>
+        <a href="{{ logout_path('main') }}">Logout</a>
+        <h2>Authentication Token</h2>
+        {{ dump(app.token) }}
+        <h2>Registered Authenticators</h2>
+        <button onclick="addDevice()">Register another authenticator</button>
+        {{ dump(authenticatorList) }}
+    {% else %}
+        <h1>Hello World!</h1>
+        <h2>Information</h2>
+        <p>Please fill in the form here below to create a new user account and associate your first authenticator.</p>
+        <dl>
+            <dt>Username:</dt>
+            <dd>The username is MANDATORY and must be unique within the application. The e-mail addresses are NOT recommended. You can use emoticons if you want.</dd>
+            <dt>Display Name:</dt>
+            <dd>The display name is MANDATORY. It may be showed in the application to other users.</dd>
+            <dt>Authenticator Type:</dt>
+            <dd>By default all authenticator types are allowed. You can restrict the registration to "platform" authenticators (i.e. embedded devices) or "cross-platform" (e.g. USB, NFC, bluetooth devices).</dd>
+            <dt>User Verification:</dt>
+            <dd>By default the user verification is asked but may failed. You can decide to force that verification ("required") or prevent it ("discouraged").</dd>
+            <dt>Register with Resident Key:</dt>
+            <dd>Creates a client-side-resident whose credential private key is stored in the authenticator, client or client device.</dd>
+        </dl>
+        <h2>Passwordless AND Usernameless Authentication</h2>
+        <p>It is possible to authenticate WITHOUT username i.e. the authenticator will associate a user to this web application.</p>
+        <p>To do so, please register a compatible authenticator (e.g. finger print reader, PIN code…) by selecting the following fields:</p>
+        <ul>
+            <li>User Verification MUST be "required"</li>
+            <li>Register with Resident Key MUST be checked</li>
+        </ul>
+        <p>When done, you can log in without username. You should be prompted by your client to select tehe correct user account.</p>
+        <strong>The user verification is mandatory for this authentication mode.</strong>
+        <h2>Registration Form</h2>
+        <form action="#" id="registration_form">
+            <label for="registration_username">Username</label><input required type="text" id="registration_username" value="" name="username"><br>
+            <label for="registration_displayName">Display Name</label><input required type="text" id="registration_displayName" value="" name="displayName"><br>
+            <label for="registration_authenticatorAttachment">Authenticator Type</label>
+            <select name="authenticatorAttachment" id="registration_authenticatorAttachment">
+                <option value="">Unspecified</option>
+                <option value="cross-platform">Cross Platform</option>
+                <option value="platform">Platform</option>
+            </select><br>
+            <label for="registration_userVerification">User Verification</label>
+            <select name="userVerification" id="registration_userVerification">
+                <option value="preferred">Preferred</option>
+                <option value="required">Required</option>
+                <option value="discouraged">Discouraged</option>
+            </select><br>
+            <label for="registration_requireResidentKey">Register with Resident Key</label><input type="checkbox" id="registration_requireResidentKey" name="requireResidentKey"><br>
+            <button onclick="register(event)">Register</button>
+        </form>
+        <h2>Authentication Form</h2>
+        <form action="#" id="authentication_form">
+            <label for="authentication_username">Username</label><input type="text" id="authentication_username" value="" name="username"><br>
+            <label for="authentication_userVerification">User Verification</label>
+            <select name="userVerification" id="authentication_userVerification">
+                <option value="preferred">Preferred</option>
+                <option value="required">Required</option>
+                <option value="discouraged">Discouraged</option>
+            </select><br>
+            <button onclick="login(event)">Login</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        function arrayToBase64String(a) {
+            return btoa(String.fromCharCode(...a));
+        }
+        function base64url2base64(input) {
+            input = input
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            const pad = input.length % 4;
+            if(pad) {
+                if(pad === 1) {
+                    throw new Error('InvalidLengthError: Input base64url string is the wrong length to determine padding');
+                }
+                input += new Array(5-pad).join('=');
+            }
+            return input;
+        }
+
+        function processWithLoginOptions(publicKey) {
+            publicKey.challenge = Uint8Array.from(window.atob(base64url2base64(publicKey.challenge)), function(c){return c.charCodeAt(0);});
+            if (publicKey.allowCredentials) {
+                publicKey.allowCredentials = publicKey.allowCredentials.map(function(data) {
+                    data.id = Uint8Array.from(window.atob(base64url2base64(data.id)), function(c){return c.charCodeAt(0);});
+                    return data;
+                });
+            }
+            navigator.credentials.get({ 'publicKey': publicKey })
+                .then(function(data){
+                    const publicKeyCredential = {
+                        id: data.id,
+                        type: data.type,
+                        rawId: arrayToBase64String(new Uint8Array(data.rawId)),
+                        response: {
+                            authenticatorData: arrayToBase64String(new Uint8Array(data.response.authenticatorData)),
+                            clientDataJSON: arrayToBase64String(new Uint8Array(data.response.clientDataJSON)),
+                            signature: arrayToBase64String(new Uint8Array(data.response.signature)),
+                            userHandle: data.response.userHandle ? arrayToBase64String(new Uint8Array(data.response.userHandle)) : null
+                        }
+                    };
+
+                    postLoginData(
+                        JSON.stringify(
+                            publicKeyCredential
+                        )
+                    );
+                })
+                .catch(function(error){
+                    alert('Open your browser console!');
+                    console.log('FAIL', error);
+                });
+        }
+
+        function login(event) {
+            event.preventDefault();
+            const body = {}
+            if (document.getElementById('authentication_username').value !== "") {
+                body.username = document.getElementById('authentication_username').value;
+            }
+            if (document.getElementById('authentication_userVerification').value !== "preferred") {
+                body.userVerification = document.getElementById('authentication_userVerification').value;
+            }
+
+
+
+            fetch('/login/options', {
+                method  : 'POST',
+                credentials : 'same-origin',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body: JSON.stringify(body)
+            }).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                console.log(json);
+                processWithLoginOptions(json);
+            }).catch(function (err) {
+                console.log({ 'status': 'failed', 'error': err });
+            })
+        }
+
+        function postLoginData(body) {
+            fetch('/login', {
+                method  : 'POST',
+                credentials : 'same-origin',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body: body
+            }).then(function (response) {
+                return response.json();
+            }).then(function () {
+                window.location.reload()
+            }).catch(function (err) {
+                console.log({ 'status': 'failed', 'error': err });
+            })
+        }
+
+
+
+
+
+
+
+        function processWithRegistrationOptions(publicKey) {
+            publicKey.challenge = Uint8Array.from(window.atob(base64url2base64(publicKey.challenge)), function(c){return c.charCodeAt(0);});
+            publicKey.user.id = Uint8Array.from(window.atob(publicKey.user.id), function(c){return c.charCodeAt(0);});
+            if (publicKey.excludeCredentials) {
+                publicKey.excludeCredentials = publicKey.excludeCredentials.map(function(data) {
+                    data.id = Uint8Array.from(window.atob(base64url2base64(data.id)), function(c){return c.charCodeAt(0);});
+                    return data;
+                });
+            }
+
+            navigator.credentials.create({ 'publicKey': publicKey })
+                .then(function(data){
+                    const publicKeyCredential = {
+                        id: data.id,
+                        type: data.type,
+                        rawId: arrayToBase64String(new Uint8Array(data.rawId)),
+                        response: {
+                            clientDataJSON: arrayToBase64String(new Uint8Array(data.response.clientDataJSON)),
+                            attestationObject: arrayToBase64String(new Uint8Array(data.response.attestationObject))
+                        }
+                    };
+
+                    postRegistrationData(
+                        JSON.stringify(
+                            publicKeyCredential
+                        )
+                    );
+                })
+                .catch(function(error){
+                    alert('Open your browser console!');
+                    console.log('FAIL', error);
+                });
+        }
+
+        function register(event) {
+            event.preventDefault();
+            const authenticatorSelection = {};
+            if (document.getElementById('registration_userVerification').value !== "preferred") {
+                authenticatorSelection.userVerification = document.getElementById('registration_userVerification').value;
+            }
+            if (document.getElementById('registration_authenticatorAttachment').value !== "") {
+                authenticatorSelection.authenticatorAttachment = document.getElementById('registration_authenticatorAttachment').value;
+            }
+            if (document.getElementById('registration_requireResidentKey').checked) {
+                authenticatorSelection.requireResidentKey = true;
+            }
+
+            const body = {
+                "username": document.getElementById('registration_username').value,
+                "displayName": document.getElementById('registration_displayName').value,
+                "authenticatorSelection": authenticatorSelection
+            }
+
+            fetch('/register/options', {
+                method  : 'POST',
+                credentials : 'same-origin',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body: JSON.stringify(body)
+            }).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                console.log(json);
+                processWithRegistrationOptions(json);
+            }).catch(function (err) {
+                console.log({ 'status': 'failed', 'error': err });
+            })
+        }
+
+        function postRegistrationData(body) {
+            fetch('/register', {
+                method  : 'POST',
+                credentials : 'same-origin',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body: body
+            }).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                window.location.reload()
+            }).catch(function (err) {
+                console.log({ 'status': 'failed', 'error': err });
+            })
+        }
+
+
+
+
+
+
+
+
+        function addDevice() {
+            fetch('/add/device/options', {
+                method  : 'POST',
+                credentials : 'same-origin',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body: JSON.stringify({})
+            }).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                console.log(json);
+                processWithNewDeviceOptions(json)
+            }).catch(function (err) {
+                console.log({ 'status': 'failed', 'error': err });
+            })
+        }
+
+        function processWithNewDeviceOptions(publicKey) {
+            publicKey.challenge = Uint8Array.from(window.atob(base64url2base64(publicKey.challenge)), function(c){return c.charCodeAt(0);});
+            publicKey.user.id = Uint8Array.from(window.atob(publicKey.user.id), function(c){return c.charCodeAt(0);});
+            if (publicKey.excludeCredentials) {
+                publicKey.excludeCredentials = publicKey.excludeCredentials.map(function(data) {
+                    data.id = Uint8Array.from(window.atob(base64url2base64(data.id)), function(c){return c.charCodeAt(0);});
+                    return data;
+                });
+            }
+
+            navigator.credentials.create({ 'publicKey': publicKey })
+                .then(function(data){
+                    const publicKeyCredential = {
+                        id: data.id,
+                        type: data.type,
+                        rawId: arrayToBase64String(new Uint8Array(data.rawId)),
+                        response: {
+                            clientDataJSON: arrayToBase64String(new Uint8Array(data.response.clientDataJSON)),
+                            attestationObject: arrayToBase64String(new Uint8Array(data.response.attestationObject))
+                        }
+                    };
+
+                    postNewDeviceData(
+                        JSON.stringify(
+                            publicKeyCredential
+                        )
+                    );
+                })
+                .catch(function(error){
+                    alert('Open your browser console!');
+                    console.log('FAIL', error);
+                });
+        }
+
+        function postNewDeviceData(body) {
+            fetch('/add/device', {
+                method  : 'POST',
+                credentials : 'same-origin',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body: body
+            }).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                window.location.reload()
+            }).catch(function (err) {
+                console.log({ 'status': 'failed', 'error': err });
+            })
+        }
+    </script>
+{% endblock %}
