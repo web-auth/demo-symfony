@@ -28,6 +28,11 @@ security:
                     routes:
                         result_path: /webauthn/login
                         options_path: /webauthn/login/options
+                registration:
+                    enabled: true
+                    routes:
+                        result_path: /webauthn/register
+                        options_path: /webauthn/register/options
                 # where to redirect after logout
                 # target: app_any_route
 
@@ -43,3 +48,4 @@ security:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/profile, roles: ROLE_USER }
         - { path: ^/webauthn/login,  roles: IS_AUTHENTICATED_ANONYMOUSLY}
+        - { path: ^/webauthn/register,  roles: IS_AUTHENTICATED_ANONYMOUSLY}

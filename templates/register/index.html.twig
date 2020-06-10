@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello RegisterController!{% endblock %}
+
+{% block body %}
+    {% if app.user %}
+        <div class="mb-3">
+            You are logged in as {{ app.user.username }}, <a href="{{ path('app_logout') }}">Logout</a>
+        </div>
+    {% endif %}
+
+    <h1 class="h3 mb-3 font-weight-normal">Register</h1>
+    <h2 class="h4 mb-3 font-weight-normal">With Webauthn</h2>
+    <label for="inputWebauthnUsername">Username</label>
+    <input type="text" value="" name="webauthn_username" id="inputWebauthnUsername" class="form-control" autofocus>
+    <label for="inputWebauthnDisplayName">DisplayName</label>
+    <input type="text" value="" name="webauthn_displayname" id="inputWebauthnDisplayName" class="form-control" autofocus>
+    <button class="btn btn-lg btn-primary" type="submit" onclick="register()">
+        Sign in
+    </button>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="application/javascript">
+        function register() {
+            const username = document.getElementById('inputWebauthnUsername').value
+            const displayName = document.getElementById('inputWebauthnDisplayName').value
+            if (username === '' || displayName === '') {
+                alert('Invalid username or display name')
+
+                return
+            }
+            window.registerWithWebauthn({
+                username: username,
+                displayName: displayName,
+            })
+            .then(() => {
+                window.location = '/profile'
+            })
+            .catch(() => alert('Something went wrong!'))
+            ;
+        }
+    </script>
+{% endblock %}
