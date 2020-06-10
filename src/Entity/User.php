@@ -24,6 +24,21 @@ class User implements UserInterface
     private $username;
 
     /**
+     * @ORM\Column(type="string", length=180, unique=true, nullable=true)
+     */
+    private $webauthnId;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $displayName;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $icon;
+
+    /**
      * @ORM\Column(type="json")
      */
     private $roles = [];
@@ -34,10 +49,11 @@ class User implements UserInterface
      */
     private $password;
 
-    public function __construct(string $username, array $roles)
+    public function __construct(string $username, array $roles, string $displayName = null, string $webauthnId = null)
     {
         $this->username = $username;
         $this->roles = $roles;
+        $this->webauthnId = $webauthnId ?? uniqid('', true);
     }
 
     public function getId(): ?int
@@ -111,5 +127,41 @@ class User implements UserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    public function getWebauthnId(): ?string
+    {
+        return $this->webauthnId;
+    }
+
+    public function setWebauthnId(string $webauthnId): self
+    {
+        $this->webauthnId = $webauthnId;
+
+        return $this;
+    }
+
+    public function getDisplayName(): ?string
+    {
+        return $this->displayName;
+    }
+
+    public function setDisplayName(string $displayName): self
+    {
+        $this->displayName = $displayName;
+
+        return $this;
+    }
+
+    public function getIcon(): string
+    {
+        return $this->icon;
+    }
+
+    public function setIcon(string $icon): self
+    {
+        $this->icon = $icon;
+
+        return $this;
     }
 }

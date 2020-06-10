@@ -2,7 +2,7 @@
 
 webauthn:
     credential_repository: 'App\Repository\PublicKeyCredentialSourceRepository'
-    user_repository: 'Webauthn\Bundle\Repository\DummyPublicKeyCredentialUserEntityRepository' # CREATE YOUR REPOSITORY AND CHANGE THIS!
+    user_repository: 'App\Repository\PublicKeyCredentialUserEntityRepository'
     creation_profiles:
         default:
             rp:

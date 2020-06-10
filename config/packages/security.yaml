@@ -23,6 +23,7 @@ security:
                     - App\Security\UsernameAndPasswordAuthenticator
             logout:
                 path: app_logout
+            webauthn: ~
                 # where to redirect after logout
                 # target: app_any_route
 
