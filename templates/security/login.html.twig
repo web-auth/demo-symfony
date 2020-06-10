@@ -56,13 +56,18 @@
     <script type="application/javascript">
         function login() {
             const username = document.getElementById('inputWebauthnUsername').value
-            if (username === '') {
-                window.loginWithWebauthn({});
-            } else {
-                window.loginWithWebauthn({
+            let data = {}
+            if (username !== '') {
+                data = {
                     username: username,
-                });
+                };
             }
+            window.loginWithWebauthn(data)
+                .then(() => {
+                    window.location = '/profile'
+                })
+                .catch(() => alert('Something went wrong!'))
+            ;
         }
     </script>
 {% endblock %}

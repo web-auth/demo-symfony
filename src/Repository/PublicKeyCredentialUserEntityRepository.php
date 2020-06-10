@@ -70,7 +70,7 @@ final class PublicKeyCredentialUserEntityRepository implements PublicKeyCredenti
     private function findPublicKeyCredentialUserEntity(array $criteria): ?PublicKeyCredentialUserEntity
     {
         $user = $this->userRepository->findOneBy($criteria);
-        if ($user === null || $user->getWebauthnId()) {
+        if ($user === null || $user->getWebauthnId() === null) {
             return null;
         }
 

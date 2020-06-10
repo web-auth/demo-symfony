@@ -20,6 +20,7 @@
             <a href="{{ logout_path() }}">Log out</a>
         </ul>
     {% else %}
+        <a href="{{ path('register') }}">Register</a>
         <p><a href="{{ path('app_login') }}">Log in</a></p>
     {% endif %}
 </div>
