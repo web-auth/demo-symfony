@@ -11,6 +11,12 @@
 <div class="example-wrapper">
     <h1>Hello {{ user.username }}! ✅</h1>
 
-    This is your profile page.
+    <p>
+        This is your profile page.
+    </p>
+    <ul>
+        <a href="{{ path('homepage') }}">Homepage</a>
+        <a href="{{ logout_path() }}">Log out</a>
+    </ul>
 </div>
 {% endblock %}

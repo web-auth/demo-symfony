@@ -11,6 +11,16 @@
 <div class="example-wrapper">
     <h1>Hello</h1>
 
-    This is the homepage
+    <p>
+        This is the homepage.
+    </p>
+    {% if is_granted('ROLE_USER') %}
+        <ul>
+            <a href="{{ path('profile') }}">Profile</a>
+            <a href="{{ logout_path() }}">Log out</a>
+        </ul>
+    {% else %}
+        <p><a href="{{ path('app_login') }}">Log in</a></p>
+    {% endif %}
 </div>
 {% endblock %}
