@@ -23,7 +23,11 @@ security:
                     - App\Security\UsernameAndPasswordAuthenticator
             logout:
                 path: app_logout
-            webauthn: ~
+            webauthn:
+                authentication:
+                    routes:
+                        result_path: /webauthn/login
+                        options_path: /webauthn/login/options
                 # where to redirect after logout
                 # target: app_any_route
 
@@ -38,3 +42,4 @@ security:
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/webauthn/login,  roles: IS_AUTHENTICATED_ANONYMOUSLY}
