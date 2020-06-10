@@ -15,6 +15,10 @@
     {% endif %}
 
     <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+    <ul>
+        <a href="{{ path('homepage') }}">Homepage</a>
+    </ul>
+    <h2 class="h4 mb-3 font-weight-normal">With username/password</h2>
     <label for="inputUsername">Username</label>
     <input type="text" value="{{ last_username }}" name="username" id="inputUsername" class="form-control" required autofocus>
     <label for="inputPassword">Password</label>
@@ -38,5 +42,27 @@
     <button class="btn btn-lg btn-primary" type="submit">
         Sign in
     </button>
-</form>
+    </form>
+    <h2 class="h4 mb-3 font-weight-normal">With Webauthn</h2>
+    <label for="inputWebauthnUsername">Username</label>
+    <input type="text" value="{{ last_username }}" name="webauthn_username" id="inputWebauthnUsername" class="form-control" autofocus>
+    <button class="btn btn-lg btn-primary" type="submit" onclick="login()">
+        Sign in
+    </button>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="application/javascript">
+        function login() {
+            const username = document.getElementById('inputWebauthnUsername').value
+            if (username === '') {
+                window.loginWithWebauthn({});
+            } else {
+                window.loginWithWebauthn({
+                    username: username,
+                });
+            }
+        }
+    </script>
 {% endblock %}
